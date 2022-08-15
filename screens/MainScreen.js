@@ -45,7 +45,8 @@ const MainScreen = () => {
     console.log("app init path success! file path is : ", path);
   };
   const handleInitPath = async () => {
-    await AsyncStorage.setItem("app_path", "/storage/emulated/0/Android/media/com.shv.app/");
+    let appPath = RNFS.ExternalDirectoryPath + "/com.shv.app/";
+    await AsyncStorage.setItem("app_path", appPath);
   };
   useEffect(() => {
     const asyncBootstrap = async () => {

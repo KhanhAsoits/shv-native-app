@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { PermissionsAndroid, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  PermissionsAndroid,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Modal from "react-native-modal";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import HistoryScreen from "./HistoryScreen";
@@ -7,6 +16,9 @@ import SaveBookScreen from "./SaveBookScreen";
 import DocumentPicker from "react-native-document-picker";
 import RNFS from "react-native-fs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AndroidStorage } from "../helpers/PermissionHelpler";
+import AlertModal from "../components/AlertModal";
+import toSlug from "../helpers/StringHelper";
 
 
 const MyBookScreen = ({ navigation, appContext }) => {
@@ -14,6 +26,9 @@ const MyBookScreen = ({ navigation, appContext }) => {
   const [activeTab, setActiveTab] = useState(1);
   const [filesPick, setFilesPick] = useState([]);
   const [fileChoseModal, setFileChoseModal] = useState(false);
+  const [isAlertShow, setAlertShow] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
   //file get
   const handlePickFile = useCallback(async () => {
     try {
@@ -35,24 +50,67 @@ const MyBookScreen = ({ navigation, appContext }) => {
   };
 
   const initBookSaveDir = async () => {
-    const grated = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      {
-        title: "Yêu Cầu Cấp Quyền",
-        message: "Ứng Dụng Yêu Cầu Quyền Truy Cập,Đọc,Ghi file",
-        buttonPositive: "Cho Phép",
-      },
-    );
+    let grated = await AndroidStorage();
     if (grated === PermissionsAndroid.RESULTS.GRANTED) {
       await RNFS.mkdir(await AsyncStorage.getItem("app_path") + "/books");
       console.log("create book directory success!");
     }
   };
 
-  const handleSaveBook = () => {
+  const handleSaveBook = async () => {
+    try {
+      //  check permission
+      let grated = await AndroidStorage();
+      if (grated === PermissionsAndroid.RESULTS.GRANTED) {
+        //  create book container folder
+        if (filesPick.length > 0) {
+          let book = filesPick[0];
+          let bookNameSlug = toSlug(book.name.slice(0, book.name.indexOf(".txt")));
+          let bookPath = await AsyncStorage.getItem("app_path") + "books/" + bookNameSlug;
+          let filePath = bookPath + "/" + bookNameSlug + ".txt";
 
+          await RNFS.mkdir(bookPath);
+          console.log("create book folder success", {
+            bookName: book.name.slice(0, book.name.indexOf(".txt")),
+            path: bookPath,
+          });
+
+
+          //read file content
+          const content = await RNFS.readFile(book.uri);
+
+
+          //write content to txt file
+          if (await RNFS.exists(bookPath)) {
+            console.log("book path : ", filePath);
+
+            await RNFS.writeFile(filePath, content, "utf8");
+
+            console.log("Save book content file success!");
+            console.log("Save config file");
+            let configFilePath = bookPath + "/" + "config.json";
+            let configObject = JSON.stringify({
+              title: book.name.slice(0, book.name.indexOf(".txt")),
+              slug: bookNameSlug,
+              file: bookNameSlug + ".txt",
+            });
+
+            await RNFS.writeFile(configFilePath, configObject, "utf8");
+            console.log("create config success!");
+            handleOpenAddBookModal();
+            //
+          } else {
+            console.log("book folder path not exits");
+          }
+        } else {
+          console.log("no book chosen!");
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
-
+  //modal
   const AddBookModal = () => {
     return (
       <Modal
@@ -102,11 +160,12 @@ const MyBookScreen = ({ navigation, appContext }) => {
               <Text style={{ color: "black", fontSize: 16, fontWeight: "500" }}> Save Book</Text>
             </View>
           </TouchableOpacity>
+          <Text style={{ color: "red", fontSize: 12, fontWeight: "500" }}>{alertMessage}</Text>
         </View>
       </Modal>
     );
   };
-
+  //end modal
   //end file get
   const TabItem = ({ item }) => {
     return (
@@ -132,8 +191,10 @@ const MyBookScreen = ({ navigation, appContext }) => {
     };
     asyncBootstrap();
   }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", paddingHorizontal: 10 }}>
+      <AlertModal isShow={isAlertShow} setIsShow={setAlertShow} message={alertMessage}></AlertModal>
       <View style={{ flex: 1 }}>
         <View style={styles.headerContent}>
           <Text style={styles.headerText}>Tủ Truyện</Text>
