@@ -1,10 +1,12 @@
-import React, { useCallback, useState } from "react";
-import { SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { PermissionsAndroid, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import HistoryScreen from "./HistoryScreen";
 import SaveBookScreen from "./SaveBookScreen";
 import DocumentPicker from "react-native-document-picker";
+import RNFS from "react-native-fs";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const MyBookScreen = ({ navigation, appContext }) => {
@@ -31,6 +33,22 @@ const MyBookScreen = ({ navigation, appContext }) => {
     setFilesPick([]);
     setFileChoseModal(!fileChoseModal);
   };
+
+  const initBookSaveDir = async () => {
+    const grated = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      {
+        title: "Yêu Cầu Cấp Quyền",
+        message: "Ứng Dụng Yêu Cầu Quyền Truy Cập,Đọc,Ghi file",
+        buttonPositive: "Cho Phép",
+      },
+    );
+    if (grated === PermissionsAndroid.RESULTS.GRANTED) {
+      await RNFS.mkdir(await AsyncStorage.getItem("app_path") + "/books");
+      console.log("create book directory success!");
+    }
+  };
+
   const handleSaveBook = () => {
 
   };
@@ -108,8 +126,12 @@ const MyBookScreen = ({ navigation, appContext }) => {
     );
   };
 
-
-  //add book modal
+  useEffect(() => {
+    const asyncBootstrap = async () => {
+      await initBookSaveDir();
+    };
+    asyncBootstrap();
+  }, []);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white", paddingHorizontal: 10 }}>
       <View style={{ flex: 1 }}>

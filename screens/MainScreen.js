@@ -5,12 +5,15 @@ import HomeScreen from "./HomeScreen";
 import MyBookScreen from "./MyBookScreen";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Backdrop } from "react-native-backdrop";
-import { SafeAreaView, Text, View } from "react-native";
+import { PermissionsAndroid, SafeAreaView, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import RNFS from "react-native-fs";
 
 const AppContext = createContext(null);
 
 const MainScreen = () => {
   //create tab
+
   const Tab = createBottomTabNavigator();
   const [openBackDrop, setOpenBackDrop] = useState(false);
   const [backDropContent, setBackDropContent] = useState(null);
@@ -21,7 +24,36 @@ const MainScreen = () => {
   const handleOpen = () => {
     setOpenBackDrop(true);
   };
-
+  const handleInitStorage = async () => {
+    let path = await AsyncStorage.getItem("app_path");
+    try {
+      const grated = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: "Yêu Cầu Cấp Quyền",
+          message: "Ứng Dụng Yêu Cầu Quyền Truy Cập,Đọc,Ghi file",
+          buttonPositive: "Cho Phép",
+        },
+      );
+      if (grated === PermissionsAndroid.RESULTS.GRANTED) {
+        await RNFS.mkdir(path);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+    await RNFS.mkdir(path);
+    console.log("app init path success! file path is : ", path);
+  };
+  const handleInitPath = async () => {
+    await AsyncStorage.setItem("app_path", "/storage/emulated/0/Android/media/com.shv.app/");
+  };
+  useEffect(() => {
+    const asyncBootstrap = async () => {
+      await handleInitPath();
+      await handleInitStorage();
+    };
+    asyncBootstrap();
+  });
   useEffect(() => {
   }, [backDropContent]);
 

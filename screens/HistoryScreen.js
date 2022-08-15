@@ -1,8 +1,6 @@
 import { FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useContext, useState } from "react";
-import image from "react-native-reanimated/src/reanimated2/component/Image";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { Backdrop } from "react-native-backdrop";
 
 const HistoryScreen = ({ navigation, appContext }) => {
   const { handleOpen, setBackDropContent } = useContext(appContext);
@@ -54,6 +52,7 @@ const HistoryScreen = ({ navigation, appContext }) => {
     setBackDropContent(backDropContent);
     handleOpen();
   };
+
   const ListBookItem = ({ item }) => {
     return (
       <View>
