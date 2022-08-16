@@ -8,6 +8,7 @@ import { Backdrop } from "react-native-backdrop";
 import { PermissionsAndroid, SafeAreaView, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import RNFS from "react-native-fs";
+import Spinner from "react-native-loading-spinner-overlay";
 
 const AppContext = createContext(null);
 
@@ -17,6 +18,7 @@ const MainScreen = () => {
   const Tab = createBottomTabNavigator();
   const [openBackDrop, setOpenBackDrop] = useState(false);
   const [backDropContent, setBackDropContent] = useState(null);
+  const [showSpinner, isShowSpinner] = useState(false);
 
   const handleClose = () => {
     setBackDropContent(null);
@@ -59,7 +61,12 @@ const MainScreen = () => {
   }, [backDropContent]);
 
   const appContextValue = {
-    openBackDrop, backDropContent, setBackDropContent, handleOpen: handleOpen, handleClose: handleClose,
+    openBackDrop,
+    backDropContent,
+    setBackDropContent,
+    handleOpen: handleOpen,
+    handleClose: handleClose,
+    showSpinner: isShowSpinner,
   };
   return (
     <AppContext.Provider value={appContextValue}>
@@ -123,6 +130,8 @@ const MainScreen = () => {
           {backDropContent}
         </SafeAreaView>
       </Backdrop>
+      {/* spinner */}
+      {showSpinner && <Spinner visible={true}></Spinner>}
     </AppContext.Provider>
   );
 };

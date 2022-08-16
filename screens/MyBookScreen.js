@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
-  Alert,
   PermissionsAndroid,
   SafeAreaView,
   StyleSheet,
@@ -19,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AndroidStorage } from "../helpers/PermissionHelpler";
 import AlertModal from "../components/AlertModal";
 import toSlug from "../helpers/StringHelper";
+import { AddGlobalConfigBook } from "../helpers/FileHelper";
 
 
 const MyBookScreen = ({ navigation, appContext }) => {
@@ -29,15 +29,19 @@ const MyBookScreen = ({ navigation, appContext }) => {
   const [isAlertShow, setAlertShow] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
+  const { showSpinner } = useContext(appContext);
   //file get
   const handlePickFile = useCallback(async () => {
     try {
+      showSpinner(true);
       let filesPick = await DocumentPicker.pick({
         presentationStyle: "fullscreen",
         allowMultiSelection: false,
       });
       setFilesPick(filesPick);
+      showSpinner(false);
     } catch (e) {
+      showSpinner(false);
       console.log(e);
     }
   }, []);
@@ -64,6 +68,7 @@ const MyBookScreen = ({ navigation, appContext }) => {
       if (grated === PermissionsAndroid.RESULTS.GRANTED) {
         //  create book container folder
         if (filesPick.length > 0) {
+          showSpinner(true);
           let book = filesPick[0];
           let bookNameSlug = toSlug(book.name.slice(0, book.name.indexOf(".txt")));
           let bookPath = await AsyncStorage.getItem("app_path") + "books/" + bookNameSlug;
@@ -96,9 +101,16 @@ const MyBookScreen = ({ navigation, appContext }) => {
             });
 
             await RNFS.writeFile(configFilePath, configObject, "utf8");
-            console.log("create config success!");
+            console.log("create global config success!");
+
+
+            await AddGlobalConfigBook(configObject);
+
             handleOpenAddBookModal();
+            //create global config
+
             //
+            showSpinner(false);
           } else {
             console.log("book folder path not exits");
           }
@@ -110,7 +122,7 @@ const MyBookScreen = ({ navigation, appContext }) => {
       console.log(e);
     }
   };
-  //modal
+  //modakjn                                   l
   const AddBookModal = () => {
     return (
       <Modal
@@ -128,7 +140,7 @@ const MyBookScreen = ({ navigation, appContext }) => {
               paddingHorizontal: 10,
               marginVertical: 10,
               color: "black",
-              borderWidth: 1,
+              backgroundColor: "rgba(0,0,0,0.1)",
               fontSize: 12,
               borderRadius: 8,
             }}></TextInput>
@@ -152,15 +164,14 @@ const MyBookScreen = ({ navigation, appContext }) => {
             justifyContent: "center",
             alignItems: "center",
             height: 40,
-            borderWidth: 1,
+            backgroundColor: "black",
             borderRadius: 8,
           }}>
             <View style={{ justifyContent: "center", flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name={"save-outline"} size={24} color={"gray"}></Ionicons>
-              <Text style={{ color: "black", fontSize: 16, fontWeight: "500" }}> Save Book</Text>
+              <Ionicons name={"save-outline"} size={24} color={"white"}></Ionicons>
+              <Text style={{ color: "white", fontSize: 16, fontWeight: "500" }}> Save Book</Text>
             </View>
           </TouchableOpacity>
-          <Text style={{ color: "red", fontSize: 12, fontWeight: "500" }}>{alertMessage}</Text>
         </View>
       </Modal>
     );
